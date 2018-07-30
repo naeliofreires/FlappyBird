@@ -18,6 +18,7 @@ public class FlappyBird extends ApplicationAdapter {
     private int alturaDispositivo;
     private int larguraDispositivo;
 
+    private int velocidadeQueda = 0;
     private int posicaoInicialVertical;
     private int posicaoInicialHorizontal;
 
@@ -46,13 +47,19 @@ public class FlappyBird extends ApplicationAdapter {
     @Override
     public void render() {
 
+        velocidadeQueda++;
         variacao += Gdx.graphics.getDeltaTime() * 10;
 
         if (variacao > 2)
             variacao = 0;
 
-        if(posicaoInicialVertical != 0)
-            posicaoInicialVertical--;
+        if (Gdx.input.justTouched()) {
+            velocidadeQueda = -20;
+        }
+
+        if (posicaoInicialVertical > 0 || velocidadeQueda < 0) {
+            posicaoInicialVertical -= velocidadeQueda;
+        }
 
         /**
          * Iniciando a exibição das nossas imagens
