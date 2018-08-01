@@ -2,7 +2,9 @@ package com.naelio.flappybird;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import java.util.Random;
@@ -13,31 +15,39 @@ public class FlappyBird extends ApplicationAdapter {
      * ultilizada para criar animações
      */
     private SpriteBatch batch;
+    private Random numeroRandomico;
+    private BitmapFont font;
 
     private Texture[] birds;
     private Texture background;
     private Texture canoBaixo;
     private Texture canoTopo;
-    private Random numeroRandomico;
 
+    private int pontuacao = 0;
+    private int estadoJogo = 0;
     private int alturaDispositivo;
     private int larguraDispositivo;
     private int velocidadeQueda = 0;
     private int posicaoInicialVertical;
     private int posicaoInicialHorizontal;
 
-
     private float variacao = 0.0f; // variável responsável por ficar alternando as imagens dos passaros
     private float espacamentoCano;
     private float posicaoMovimentoCanoHorizontal;
     private float alturaEntreCanosRandomica;
+
+    private boolean marcou = false;
 
     @Override
     public void create() {
 
         birds = new Texture[3];
         batch = new SpriteBatch();
+
         numeroRandomico = new Random();
+        font = new BitmapFont();
+        font.setColor(Color.WHITE);
+        font.getData().setScale(6);
 
         birds[0] = new Texture("passaro1.png");
         birds[1] = new Texture("passaro2.png");
@@ -62,43 +72,74 @@ public class FlappyBird extends ApplicationAdapter {
     @Override
     public void render() {
 
-        velocidadeQueda++;
-        posicaoMovimentoCanoHorizontal -= Gdx.graphics.getDeltaTime() * 200;
+        /**
+         * responsável pela batida de asas
+         */
+        this.variacao();
+
+        if (estadoJogo == 0) { // Jogo não iniciado
+            if (Gdx.input.justTouched())
+                estadoJogo = 1;
+        } else {
+
+            velocidadeQueda++;
+            posicaoMovimentoCanoHorizontal -= Gdx.graphics.getDeltaTime() * 200;
+
+
+            if (Gdx.input.justTouched()) {
+                velocidadeQueda = -20;
+            }
+
+            if (posicaoInicialVertical > 0 || velocidadeQueda < 0) {
+                posicaoInicialVertical -= velocidadeQueda;
+            }
+
+            if (this.canoForaDaTela()) {
+                posicaoMovimentoCanoHorizontal = larguraDispositivo;
+                alturaEntreCanosRandomica = numeroRandomico.nextInt(400) - 200;
+                marcou = false;
+            }
+
+            if (posicaoMovimentoCanoHorizontal < 120) {
+                if(!marcou){
+                    pontuacao++;
+                    marcou = true;
+                }
+            }
+
+            /**
+             * Iniciando a exibição das nossas imagens
+             */
+            batch.begin();
+
+            batch.draw(background, 0, 0, larguraDispositivo, alturaDispositivo);
+
+            batch.draw(canoTopo, posicaoMovimentoCanoHorizontal, alturaDispositivo / 2 + (espacamentoCano / 2) + alturaEntreCanosRandomica);
+            batch.draw(canoBaixo, posicaoMovimentoCanoHorizontal, alturaDispositivo / 2 - canoBaixo.getHeight() - (espacamentoCano / 2) + alturaEntreCanosRandomica);
+
+            /**
+             * Imagem dos passaros, batida de asas
+             */
+            batch.draw(birds[(int) variacao], 120, posicaoInicialVertical);
+            font.draw(batch, String.valueOf(pontuacao), larguraDispositivo / 2, alturaDispositivo - 100);
+            batch.end();
+            /**
+             * Finalizando a exibição das nossas imagens
+             */
+        }
+    }
+
+    private void variacao() {
         variacao += Gdx.graphics.getDeltaTime() * 10;
 
-        if (variacao > 2)
-            variacao = 0;
-
-        if (Gdx.input.justTouched()) {
-            velocidadeQueda = -20;
-        }
-
-        if (posicaoInicialVertical > 0 || velocidadeQueda < 0) {
-            posicaoInicialVertical -= velocidadeQueda;
-        }
-
-        // verificando se o cano saiu inteiramente da tela
-        if (posicaoMovimentoCanoHorizontal < -100){
-            posicaoMovimentoCanoHorizontal = larguraDispositivo;
-            alturaEntreCanosRandomica = numeroRandomico.nextInt(400) - 200;
-        }
-
         /**
-         * Iniciando a exibição das nossas imagens
+         * São apenas 3 imagens no array indo da posição [0,1,2], se passar do 2, voltar a zero.
          */
-        batch.begin();
+        if (variacao > 2) variacao = 0;
+    }
 
-        batch.draw(background, 0, 0, larguraDispositivo, alturaDispositivo);
-
-        batch.draw(canoTopo, posicaoMovimentoCanoHorizontal, alturaDispositivo/ 2 + (espacamentoCano/2) + alturaEntreCanosRandomica);
-        batch.draw(canoBaixo, posicaoMovimentoCanoHorizontal, alturaDispositivo / 2 - canoBaixo.getHeight() - (espacamentoCano/2) + alturaEntreCanosRandomica);
-
-        batch.draw(birds[(int) variacao], 120, posicaoInicialVertical);
-
-        batch.end();
-        /**
-         * Finalizando a exibição das nossas imagens
-         */
+    private boolean canoForaDaTela() {
+        return posicaoMovimentoCanoHorizontal < -100;
     }
 
 }
